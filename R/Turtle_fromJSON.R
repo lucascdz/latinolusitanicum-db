@@ -3,7 +3,7 @@
 # JsonFilename <- "Velez1744List.json"
 # prefixesFilename <- "Velez1744prefixes.txt"
 
-ConvertJsonToTurtle <- function(dictDataDir, SourceDataJson_alt){
+ConvertFromJson <- function(dictDataDir, SourceDataJson_alt){
 
    Json2Turtle <- gsub("    \"", "    ", SourceDataJson_alt) %>%
       gsub("  \"", "# ", .) %>%
@@ -53,48 +53,3 @@ ConvertJsonToTurtle <- function(dictDataDir, SourceDataJson_alt){
 
 }
 
-ConvertJsonToTurtle_old <- function(dictDataDir, SourceDataJson){
-
-   Json2Turtle <- gsub("    \"", "    ", SourceDataJson) %>%
-      gsub("  \"", "# ", .) %>%
-      gsub("\n    \\}\n  \\}\n\\}", " .\n\n# END OF FILE", .) %>%
-      gsub("\n    \\}\n  \\},", " .\n\n", .) %>%
-      gsub("\": \\{", "", .) %>%
-      gsub("\n    \\},", " .\n", .) %>%
-      gsub(",\n", " ;\n", .) %>%
-      gsub("\": \\[\".\"", " ", .) %>%
-      gsub(".\"\"\\]", "", .) %>%
-      gsub("\": \\[\"", " ", .) %>%
-      gsub("\"\\]", "", .) %>%
-      gsub("##", "\"", .)
-
-   Json2Turtle <- gsub("lexicog\\.", "lexicog:", Json2Turtle) %>%
-      gsub("resource\\.", "resource:", .) %>%
-      gsub("decomp\\.", "decomp:", .) %>%
-      gsub("rdfs\\.", "rdfs:", .) %>%
-      gsub("dcterms\\.", "dcterms:", .) %>%
-      gsub("owl\\.", "owl:", .) %>%
-      gsub("lime\\.", "lime:", .) %>%
-      gsub("ontolex\\.", "ontolex:", .) %>%
-      gsub("lexinfo\\.", "lexinfo:", .) %>%
-      gsub("lexinfo:note.1", "lexinfo:note", .) %>%
-      gsub("lexinfo:net", "lexinfo.net", .) %>%
-      gsub("skos\\.", "skos:", .) %>%
-      gsub("definition.la", "definition", .) %>%
-      gsub("definition.pt", "definition", .) %>%
-      gsub("value.la", "value", .) %>%
-      gsub("value.pt", "value", .) %>%
-      gsub("label.la", "label", .) %>%
-      gsub("label.pt", "label", .) %>%
-      gsub("label.en", "label", .) %>%
-      gsub(";\n      subClass ", ", ontolex:", .)
-
-   # ADD PREFIXES
-   Prefixes <- read_file(paste0(dictDataDir,"prefixes.txt"))
-   Json2Turtle <- gsub("\\{", Prefixes, Json2Turtle)
-
-   write(Json2Turtle, paste0(dictDataDir,gsub("([A-z]*).*", "\\1", dictPrefix),"Data.ttl"))
-
-   return(print("The turtle file was saved in the source directory."))
-
-}

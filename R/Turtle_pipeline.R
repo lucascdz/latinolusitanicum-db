@@ -1,12 +1,14 @@
+# ENCLOSE THIS FUNCTION TO BE CALLED IN 'Turtle_app'
+
 # libraries
 library(tidyverse)
 library(jsonlite)
 
 print(date())
-source("./R/TTLgetDataSet.R")
-source("./R/TTLaddMarkers.R")
-source("./R/TTLconvertToList.R")
-source("./R/TTLfromJson.R")
+source("./R/Turtle_getDataset.R")
+source("./R/Turtle_addMarkers.R")
+source("./R/Turtle_asList.R")
+source("./R/Turtle_fromJSON.R")
 
 # arguments
 dictDataDir <- "/Users/lucascdz/FILES/doutorado/corpus/1762_Fonseca/Fonseca.1798.parvumlexicum-0.4.1_tsv/"
@@ -14,12 +16,12 @@ dictPrefix <- "Fonseca1798\\."
 target <- "LiLa"
 
 # get a list with all needed DFs
-SourceDFList <- TTLGetDataSet(dictDataDir,dictPrefix,target)
+SourceDFList <- GetDataset(dictDataDir,dictPrefix,target)
 # Velez = 30-40 sec. / 27 sec./ 22 sec.
 # Fonseca = 10 min. / 13 min.
 
 # ADD MARKERS TO ##string.values##
-SourceDFList <- AddMarkersToValues(SourceDFList)
+SourceDFList <- AddMarkers(SourceDFList)
 
 #
 # CREATE LISTS FOR BOTH RESOURCES 'lexicog:LexicographicResource' AND 'lime:Lexicon'
@@ -59,7 +61,7 @@ SourceDataJson <- jsonlite::toJSON(SourceDataList, pretty = T)
 write(SourceDataJson, paste0(dictDataDir,gsub("([A-z]*).*", "\\1", dictPrefix),"Data.json"))
 
 # CONVERT JSON TO TURTLE FILE ('Lila-style') (OBS. 'prefixes' defined inside the function)
-ConvertJsonToTurtle(dictDataDir, SourceDataJson)
+ConvertFromJson(dictDataDir, SourceDataJson)
 
 ### OK ###
 print(date())

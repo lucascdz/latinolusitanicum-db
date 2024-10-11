@@ -3,7 +3,7 @@
 # argument
 # SourceDFList <- VelezDFList
 
-AddMarkersToValues <- function(SourceDFList){
+AddMarkers <- function(SourceDFList){
 
    SourceDFList$EntriesDF[SourceDFList$EntriesDF == ""] <- NA
    SourceDFList$EntriesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$EntriesDF$rdfs.label)
