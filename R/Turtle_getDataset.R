@@ -1,9 +1,9 @@
 # dictDataDir = path to the directory with TSV files exported from Numbers file (NOTE that it ends with /).
-#dictDataDir <- "/Users/lucascdz/FILES/doutorado/corpus/1762_Fonseca/Fonseca.1798.parvumlexicum-0.4.1_tsv/"
-#dictPrefix <- "Fonseca1798\\."
+#dictDataDir <- "./sources/Velez/Velez.1744.indextotiusartis.1.4.0/"
+#dictPrefix <- "Velez1744\\."
 #target <- "LiLa"
 
-TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
+GetDataset <- function(dictDataDir,dictPrefix,target){
    print(date())
 
    ############################
@@ -22,27 +22,24 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
    UsageExamplesPath <- paste0(dictDataDir,dir(dictDataDir)[which(str_detect(dir(dictDataDir),"^UsageExamples"))])
    UsageExamplesDF <- read.csv(UsageExamplesPath, sep = "\t")
 
-   decompPath <- paste0(dictDataDir,dir(dictDataDir)[which(str_detect(dir(dictDataDir),"^decomp"))])
-   decompDF <- read.csv(decompPath, sep = "\t")
+   DecompPath <- paste0(dictDataDir,dir(dictDataDir)[which(str_detect(dir(dictDataDir),"^Decomp"))])
+   DecompDF <- read.csv(DecompPath, sep = "\t")
 
-   if(str_detect(dictPrefix, "Velez")){
-      crossRefPath <- paste0(dictDataDir,dir(dictDataDir)[which(str_detect(dir(dictDataDir),"^crossRef"))])
-      crossRefDF <- read.csv(crossRefPath, sep = "\t")
-   }
-
-   ########################
-   # FILTER OUT DUPLICATES 'LexicalEntries' (SAME senseGroup AND lila_id[once not empty])
-   ########################
+   # FILTER OUT DUPLICATES 'LexicalEntries' (SAME senseGroup AND lila_id [once not empty])
    if(identical(target,"LiLa")){
-      Duplicates <- unlist(lapply(seq_along(LexicalEntriesDF$ontolex.LexicalEntry), function(i) LexicalEntriesDF$ontolex.LexicalEntry[identical(LexicalEntriesDF$ontolex.sense[i], LexicalEntriesDF$ontolex.sense[i-1]) & identical(LexicalEntriesDF$ontolex.canonicalForm[i], LexicalEntriesDF$ontolex.canonicalForm[i-1]) & LexicalEntriesDF$ontolex.canonicalForm[i]!=''][i]))
-      Duplicates <- Duplicates[!is.na(Duplicates)]
-      LexicalEntriesDF <- LexicalEntriesDF[!LexicalEntriesDF$ontolex.LexicalEntry %in% Duplicates,]
+      LexicalEntriesDF$testDuplicates <- unlist(lapply(seq_along(LexicalEntriesDF$subClass), function(i) str_flatten(c(LexicalEntriesDF$senseGroup[i],LexicalEntriesDF$ontolex.canonicalForm[i]), collapse = '_')))
+      for (i in seq_along(LexicalEntriesDF$testDuplicates)){
+         if (identical(LexicalEntriesDF$testDuplicates[i],LexicalEntriesDF$testDuplicates[i-1])){
+            LexicalEntriesDF$ontolex.LexicalEntry[i] <- NA
+         }
+      }
+      LexicalEntriesDF <- LexicalEntriesDF[!is.na(LexicalEntriesDF$ontolex.LexicalEntry),]
    }
 
-
-   ###################################
    # CREATE 'lexicog:Entries' DATA FRAME
-   ###################################
+   EntriesDF <- LexicalEntriesDF[str_detect(LexicalEntriesDF$ontolex.LexicalEntry,'e01$'),]
+   #>>>>
+   
    EntriesDF <- data.frame(lexicog.Entry=unique(gsub("\\.e\\d\\d[a-z]?$", "", LexicalEntriesDF$ontolex.LexicalEntry)), stringsAsFactors = F)
    EntriesDF$rdfs.label <- unlist(lapply(seq_along(EntriesDF$lexicog.Entry), function(i) paste0(gsub("([A-z]*).*","\\1", dictPrefix)," entry for '", FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(EntriesDF$lexicog.Entry[i],".e01.f01")],", ",FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(EntriesDF$lexicog.Entry[i],".e01.f02")],", ",FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(EntriesDF$lexicog.Entry[i],".e01.f03")],"'"))) %>%
       gsub(", '$", "'", .) %>%
@@ -61,9 +58,9 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
       }
    }
    # adjust prefixes
-   EntriesDF$lexicog.Entry <- gsub(dictPrefix, "Entry\\:", EntriesDF$lexicog.Entry)
-   EntriesDF$lexicog.describes <- gsub(dictPrefix, "LexEntry\\:", EntriesDF$lexicog.describes)
-   EntriesDF$lexicog.subComponent <- gsub(dictPrefix, "LxgComp\\:", EntriesDF$lexicog.subComponent)
+   EntriesDF$lexicog.Entry <- gsub(dictPrefix, "lexicogEntry\\:", EntriesDF$lexicog.Entry)
+   EntriesDF$lexicog.describes <- gsub(dictPrefix, "lexicalEntry\\:", EntriesDF$lexicog.describes)
+   EntriesDF$lexicog.subComponent <- gsub(dictPrefix, "lexicogComponent\\:", EntriesDF$lexicog.subComponent)
    EntriesDF[is.na(EntriesDF)] <- ""
 
 
@@ -84,8 +81,8 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
       LexComponentsDF$skos.note[i] <- LexicalEntriesDF$PRE.note[LexicalEntriesDF$ontolex.LexicalEntry == LexComponentsDF$lexicog.describes[i]]
    }
    # Update prefixes
-   LexComponentsDF$lexicog.LexicographicComponent <- gsub(dictPrefix, "LxgComp:", LexComponentsDF$lexicog.LexicographicComponent)
-   LexComponentsDF$lexicog.describes <- gsub(dictPrefix, "LexEntry\\:", LexComponentsDF$lexicog.describes)
+   LexComponentsDF$lexicog.LexicographicComponent <- gsub(dictPrefix, "lexicogComponent:", LexComponentsDF$lexicog.LexicographicComponent)
+   LexComponentsDF$lexicog.describes <- gsub(dictPrefix, "lexicalEntry\\:", LexComponentsDF$lexicog.describes)
 
 
 
@@ -122,7 +119,7 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
    }
    LexicalEntriesDF$decomp.subterm <- ""
    for (i in seq_along(LexicalEntriesDF$decomp.subterm)){
-      LexicalEntriesDF$decomp.subterm[i] <- str_flatten_comma(decompDF$decomp.subterm[decompDF$ontolex.LexicalEntry==LexicalEntriesDF$ontolex.LexicalEntry[i]])
+      LexicalEntriesDF$decomp.subterm[i] <- str_flatten_comma(DecompDF$decomp.subterm[DecompDF$ontolex.LexicalEntry==LexicalEntriesDF$ontolex.LexicalEntry[i]])
    }
 
    # add 'rdfs.labels' to all instances
@@ -139,11 +136,11 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
    }
 
    # updates all prefixes
-   LexicalEntriesDF$ontolex.LexicalEntry <- gsub(dictPrefix, "LexEntry\\:", LexicalEntriesDF$ontolex.LexicalEntry)
+   LexicalEntriesDF$ontolex.LexicalEntry <- gsub(dictPrefix, "lexicalEntry\\:", LexicalEntriesDF$ontolex.LexicalEntry)
    LexicalEntriesDF$ontolex.canonicalForm <- gsub(dictPrefix, "Form\\:", LexicalEntriesDF$ontolex.canonicalForm)
    LexicalEntriesDF$ontolex.lexicalForm <- gsub(dictPrefix, "Form\\:", LexicalEntriesDF$ontolex.lexicalForm)
-   LexicalEntriesDF$decomp.subterm <- gsub(dictPrefix, "LexEntry\\:", LexicalEntriesDF$decomp.subterm)
-   LexicalEntriesDF$ontolex.sense <- gsub(dictPrefix, "LexSense\\:", LexicalEntriesDF$ontolex.sense)
+   LexicalEntriesDF$decomp.subterm <- gsub(dictPrefix, "lexicalEntry\\:", LexicalEntriesDF$decomp.subterm)
+   LexicalEntriesDF$ontolex.sense <- gsub(dictPrefix, "lexicalSense\\:", LexicalEntriesDF$ontolex.sense)
    if(identical(identical(target,"LiLa"), FALSE)){
       LexicalEntriesDF$ontolex.otherForm <- gsub(dictPrefix, "Form\\:", LexicalEntriesDF$ontolex.otherForm)
    }
@@ -207,14 +204,14 @@ TTLGetDataSet <- function(dictDataDir,dictPrefix,target){
       gsub("^\\s$", "", .)
 
    LexicalSensesAllDF$lexicog.usageExample <- unlist(lapply(seq_along(LexicalSensesAllDF$ontolex.LexicalSense), function(i) str_flatten_comma(UsageExamplesDF$lexicog.UsageExample[str_detect(UsageExamplesDF$lexicog.UsageExample, paste0(LexicalSensesAllDF$ontolex.LexicalSense[i],"\\."))])))
-   LexicalSensesAllDF$lexicog.usageExample <- gsub(dictPrefix, "UsageEx\\:", LexicalSensesAllDF$lexicog.usageExample)
-   LexicalSensesAllDF$ontolex.LexicalSense <- gsub(dictPrefix, "LexSense\\:", LexicalSensesAllDF$ontolex.LexicalSense)
+   LexicalSensesAllDF$lexicog.usageExample <- gsub(dictPrefix, "usageExample\\:", LexicalSensesAllDF$lexicog.usageExample)
+   LexicalSensesAllDF$ontolex.LexicalSense <- gsub(dictPrefix, "lexicalSense\\:", LexicalSensesAllDF$ontolex.LexicalSense)
 
 
    #####################################
    # UPDATE 'lexicog:UsageExamples' DATA FRAME
    #####################################
-   UsageExamplesDF$lexicog.UsageExample <- gsub(dictPrefix, "UsageEx\\:", UsageExamplesDF$lexicog.UsageExample)
+   UsageExamplesDF$lexicog.UsageExample <- gsub(dictPrefix, "usageExample\\:", UsageExamplesDF$lexicog.UsageExample)
 
    # remove ending punctuation and square brackets
    UsageExamplesDF$skos.note <- gsub("[\\,|\\:|\\;]$", "", UsageExamplesDF$skos.note) %>%
