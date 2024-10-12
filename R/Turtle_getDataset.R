@@ -4,27 +4,21 @@ sourcePrefix <- "Velez1744\\."
 targetPub <- "LiLa"
 
 #GetDataset <- function(sourceDir,sourcePrefix,targetPub){
-   print(date())
 
-   ############################
-   ## GET SOURCE DATA TABLES ##
-   ############################
 
+   # GET SOURCE DATA TABLES
    LexicalEntriesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^LexicalEntries"))])
    LexicalEntriesDF <- read.csv(LexicalEntriesPath, sep = "\t")
-
    FormsPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^Forms"))])
    FormsDF <- read.csv(FormsPath, sep = "\t")
-
    LexicalSensesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^LexicalSenses"))])
    LexicalSensesDF <- read.csv(LexicalSensesPath, sep = "\t")
-
    UsageExamplesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^UsageExamples"))])
    UsageExamplesDF <- read.csv(UsageExamplesPath, sep = "\t")
-
    DecompPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^Decomp"))])
    DecompDF <- read.csv(DecompPath, sep = "\t")
 
+   
    # FILTER OUT DUPLICATES 'LexicalEntries' (SAME senseGroup AND lila_id [once not empty])
    if(identical(targetPub,"LiLa")){
       LexicalEntriesDF$testDuplicates <- unlist(lapply(seq_along(LexicalEntriesDF$subClass), function(i) str_flatten(c(LexicalEntriesDF$senseGroup[i],LexicalEntriesDF$ontolex.canonicalForm[i]), collapse = '_')))
@@ -35,28 +29,29 @@ targetPub <- "LiLa"
       }
       LexicalEntriesDF <- LexicalEntriesDF[!is.na(LexicalEntriesDF$ontolex.LexicalEntry),]
    }
+   
 
+   # PREPARE 'lexicog:DataFrames'
+   LexicogDF <- LexicalEntriesDF[,colnames(LexicalEntriesDF) %in% c("ontolex.LexicalEntry","PRE.note","POS.note")]
+   colnames(LexicogDF) <- c("lexicog.describes","lexinfo.note","skos.note")
+
+      
    # CREATE 'lexicog:Entries' DATA FRAME
-   EntriesDF <- LexicalEntriesDF[str_detect(LexicalEntriesDF$ontolex.LexicalEntry,'e01$'),colnames(LexicalEntriesDF) %in% c("ontolex.LexicalEntry","PRE.note","POS.note")]
-   colnames(EntriesDF) <- c("lexicog.describes","lexinfo.note","skos.note")
+   EntriesDF <- LexicogDF[str_detect(LexicogDF$lexicog.describes,'e01$'),]
    EntriesDF$lexicog.Entry <- gsub('.e01$','',EntriesDF$lexicog.describes)
    # get form labels
-   entryLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.e01\\.'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
+   entryLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'e01\\.f01'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
    entryLabelDF$lexicog.Entry <- gsub('\\.e\\d+.*','',entryLabelDF$ontolex.Form)
-   entryLabelList <- split(entryLabelDF,entryLabelDF$lexicog.Entry)
-   entryLabelDF <- data.frame(
-      lexicog.Entry=names(entryLabelList),
-      rdfs.label=unlist(lapply(seq_along(entryLabelList), function(i) str_flatten_comma(entryLabelList[[i]]$ontolex.writtenRep))),
-      stringsAsFactors = F)
-   entryLabelDF$rdfs.label <- unlist(lapply(seq_along(entryLabelDF$rdfs.label), function(i) paste0(gsub("([A-z]*).*","\\1", sourcePrefix)," entry for '", entryLabelDF$rdfs.label[i],"'")))
-   EntriesDF <- left_join(EntriesDF,entryLabelDF)
+   entryLabelDF$rdfs.label <- unlist(lapply(seq_along(entryLabelDF$lexicog.Entry), function(i) paste0(gsub("([A-z]*).*","\\1", sourcePrefix),"’s entry for '", entryLabelDF$ontolex.writtenRep[i],"'")))
+   EntriesDF <- left_join(EntriesDF,entryLabelDF[,colnames(entryLabelDF) %in% c("lexicog.Entry","rdfs.label")])
    # get subComponents
-   subComponentDF <- LexicalEntriesDF[!str_detect(LexicalEntriesDF$ontolex.LexicalEntry, 'e01') & !str_detect(LexicalEntriesDF$ontolex.LexicalEntry, 'e\\d\\d[a-z]'),]
-   subComponentDF$lexicog.Entry <- gsub('\\.e\\d+.?$','',subComponentDF$ontolex.LexicalEntry)
+   subComponentDF <- LexicogDF[!str_detect(LexicalEntriesDF$ontolex.LexicalEntry, 'e01') & !str_detect(LexicalEntriesDF$ontolex.LexicalEntry, 'e\\d\\d[a-z]'),]
+   subComponentDF$lexicog.Entry <- gsub('\\.e\\d+.?$','',subComponentDF$lexicog.describes)
+   subComponentDF$lexicog.subComponent <- gsub('(.*)','\\1_comp',subComponentDF$lexicog.describes)
    subComponentList <- split(subComponentDF,subComponentDF$lexicog.Entry)
    subComponentDF <- data.frame(
       lexicog.Entry=names(subComponentList),
-      lexicog.subComponent=unlist(lapply(seq_along(subComponentList), function(i) str_flatten_comma(subComponentList[[i]]$ontolex.LexicalEntry))),
+      lexicog.subComponent=unlist(lapply(seq_along(subComponentList), function(i) str_flatten_comma(subComponentList[[i]]$lexicog.subComponent))),
       stringsAsFactors = F)
    EntriesDF <- left_join(EntriesDF,subComponentDF)
    # adjust prefixes
@@ -64,45 +59,44 @@ targetPub <- "LiLa"
    EntriesDF$lexicog.describes <- gsub(sourcePrefix, "lexicalEntry\\:", EntriesDF$lexicog.describes)
    EntriesDF$lexicog.subComponent <- gsub(sourcePrefix, "lexicogComponent\\:", EntriesDF$lexicog.subComponent)
    EntriesDF[is.na(EntriesDF)] <- ""
-   rownames(EntriesDF) <- NULL
    EntriesDF <- EntriesDF[,c(
       which(colnames(EntriesDF)=="lexicog.Entry"),
       which(colnames(EntriesDF)=="rdfs.label"),
-      which(colnames(EntriesDF)=="lexicog.describes"),
       which(colnames(EntriesDF)=="lexinfo.note"),
+      which(colnames(EntriesDF)=="lexicog.describes"),
       which(colnames(EntriesDF)=="lexicog.subComponent"),
       which(colnames(EntriesDF)=="skos.note"))]
+   EntriesDF[is.na(EntriesDF)] <- ''
+   rownames(EntriesDF) <- NULL
+   ## EntriesDF DONE
+   
 
-   ###################################
    # CREATE 'lexicog:Components' DATA FRAME
-   ###################################
-   LexComponentsDF <- data.frame(lexicog.LexicographicComponent = subComponentVec)
-   LexComponentsDF$rdfs.label <- unlist(lapply(seq_along(LexComponentsDF$lexicog.LexicographicComponent), function(i) paste0("Subentry '", FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(LexComponentsDF$lexicog.LexicographicComponent[i],".f01")],", ",FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(LexComponentsDF$lexicog.LexicographicComponent[i],".f02")],", ",FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(LexComponentsDF$lexicog.LexicographicComponent[i],".f03")],"' under '", FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(gsub("e\\d\\d", "e01", LexComponentsDF$lexicog.LexicographicComponent[i]),".f01")], "'"))) %>%
-      gsub(", ' under", "' under", .) %>%
-      gsub(", ' under", "' under", .) %>%
-      gsub("' under ''", "'", .) %>%
-      gsub("\\], \\[", ", ", .)
-   LexComponentsDF$lexicog.describes <- LexComponentsDF$lexicog.LexicographicComponent
-
-   # Get 'skos.note' content from the LexicalEntry 'PRE.note' column
-   LexComponentsDF$skos.note <- ''
-   for (i in seq_along(LexComponentsDF$skos.note)){
-      LexComponentsDF$skos.note[i] <- LexicalEntriesDF$PRE.note[LexicalEntriesDF$ontolex.LexicalEntry == LexComponentsDF$lexicog.describes[i]]
-   }
-   # Update prefixes
-   LexComponentsDF$lexicog.LexicographicComponent <- gsub(sourcePrefix, "lexicogComponent:", LexComponentsDF$lexicog.LexicographicComponent)
-   LexComponentsDF$lexicog.describes <- gsub(sourcePrefix, "lexicalEntry\\:", LexComponentsDF$lexicog.describes)
-
-
-
-   ####################################
+   ComponentsDF <- LexicogDF[!str_detect(LexicogDF$lexicog.describes, 'e01') & !str_detect(LexicogDF$lexicog.describes, 'e\\d\\d[a-z]'),]
+   ComponentsDF$lexicog.Entry <- gsub('\\.e\\d+.?$','',ComponentsDF$lexicog.describes)
+   ComponentsDF$lexicog.LexicographicComponent <- gsub('(.*)','\\1_comp',ComponentsDF$lexicog.describes)
+   # add labels
+   compLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.f01') & !str_detect(FormsDF$ontolex.Form,'\\.e01\\.'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
+   compLabelDF$lexicog.LexicographicComponent <- gsub('^(.*)\\.f\\d+.*','\\1_comp',compLabelDF$ontolex.Form)
+   compLabelDF$rdfs.label <- unlist(lapply(seq_along(compLabelDF$ontolex.Form), function(i) paste0(gsub("([A-z]*).*","\\1", sourcePrefix),"’s subentry for '", compLabelDF$ontolex.writtenRep[i],"'")))
+   ComponentsDF <- left_join(ComponentsDF,compLabelDF)
+   ComponentsDF <- ComponentsDF[,c(
+      which(colnames(ComponentsDF)=="lexicog.LexicographicComponent"),
+      which(colnames(ComponentsDF)=="rdfs.label"),
+      which(colnames(ComponentsDF)=="lexinfo.note"),
+      which(colnames(ComponentsDF)=="lexicog.describes"),
+      which(colnames(ComponentsDF)=="skos.note"))]
+   # update prefixes
+   ComponentsDF$lexicog.LexicographicComponent <- gsub(sourcePrefix, "lexicogComponent:", ComponentsDF$lexicog.LexicographicComponent)
+   ComponentsDF$lexicog.describes <- gsub(sourcePrefix, "lexicalEntry\\:", ComponentsDF$lexicog.describes)
+   ComponentsDF[is.na(ComponentsDF)] <- ''
+   rownames(ComponentsDF) <- NULL
+   ## Components DONE
+   
+   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+   
    # UPDATE 'ontolex:LexicalEntries' DATA FRAME
-   ###################################
-
    # add links to lexical forms
-   if('POS.note' %in% colnames(LexicalEntriesDF)){
-      colnames(LexicalEntriesDF)[which(str_detect(colnames(LexicalEntriesDF),"POS.note"))] <- "ontolex.lexicalForm"
-   }
    LexicalEntriesDF$ontolex.lexicalForm <- ''
    if(identical(targetPub,"LiLa")){
       lexicalForm_idVec <- LexicalEntriesDF$ontolex.LexicalEntry[LexicalEntriesDF$ontolex.canonicalForm==""]
@@ -115,36 +109,45 @@ targetPub <- "LiLa"
       otherForm_idVec <- FormsDF$ontolex.Form[str_detect(FormsDF$ontolex.Form, "f01", negate = T)]
       LexicalEntriesDF$ontolex.otherForm <- unlist(lapply(seq_along(LexicalEntriesDF$ontolex.LexicalEntry), function(i) str_flatten_comma(otherForm_idVec[str_detect(otherForm_idVec, paste0(LexicalEntriesDF$ontolex.LexicalEntry[i],"\\."))])))
    }
-
    # add links to lexical senses
-   sense_idVec <- unique(c(LexicalSensesDF$ontolex.LexicalSense, gsub("\\.u\\d\\d.?$", "", UsageExamplesDF$lexicog.UsageExample)))
-   for (i in seq_along(LexicalEntriesDF$ontolex.sense)){
-      LexicalEntriesDF$ontolex.sense[i] <- str_flatten_comma(sense_idVec[str_detect(sense_idVec, paste0(LexicalEntriesDF$ontolex.sense[i],"\\."))])
-   }
-
+   ontolexSensesDF <- data.frame(
+      senses=unique(c(LexicalSensesDF$ontolex.LexicalSense, gsub("\\.u\\d\\d.?$", "", UsageExamplesDF$lexicog.UsageExample))),
+      stringsAsFactors = F)
+   ontolexSensesDF$senseGroup <- gsub('\\.s\\d+.*$','',ontolexSensesDF$senses)
+   ontolexSensesList <- split(ontolexSensesDF,ontolexSensesDF$senseGroup)
+   ontolexSensesDF <- data.frame(
+      senseGroup=names(ontolexSensesList),
+      ontolex.sense=unlist(lapply(seq_along(ontolexSensesList), function(i) str_flatten_comma(ontolexSensesList[[i]]$senses))),
+      stringsAsFactors = F)
+   LexicalEntriesDF <- left_join(LexicalEntriesDF,ontolexSensesDF)
    # add 'decomp.subterm' property to mwes
-   if('PRE.note' %in% colnames(LexicalEntriesDF)){
-      colnames(LexicalEntriesDF)[which(str_detect(colnames(LexicalEntriesDF),"PRE.note"))] <- "decomp.subterm"
-   }
-   LexicalEntriesDF$decomp.subterm <- ""
-   for (i in seq_along(LexicalEntriesDF$decomp.subterm)){
-      LexicalEntriesDF$decomp.subterm[i] <- str_flatten_comma(DecompDF$decomp.subterm[DecompDF$ontolex.LexicalEntry==LexicalEntriesDF$ontolex.LexicalEntry[i]])
-   }
+   DecompDF <- DecompDF[,c(which(str_detect(colnames(DecompDF),'ontolex|decomp')))]
 
+      # >>>>>>>>>>>>>>>>> TEST decomp.blanknode <<<<<<<<<<<<<<<<<<
+   
+   LexicalEntriesDF <- left_join(LexicalEntriesDF,DecompDF)
    # add 'rdfs.labels' to all instances
-   for(i in seq_along(LexicalEntriesDF$ontolex.LexicalEntry)){
-      LexicalEntriesDF$rdfs.label[i] <- paste0(gsub("([A-z]*).*","\\1", sourcePrefix)," lexical entry for '", FormsDF$ontolex.writtenRep[FormsDF$ontolex.Form == paste0(LexicalEntriesDF$ontolex.LexicalEntry[i],".f01")], "'")
-   }
-   # remove square brackets '[' ']' from labels
-   LexicalEntriesDF$rdfs.label <- gsub("\\[", "", LexicalEntriesDF$rdfs.label) %>%
-         gsub("\\]", "", .)
-
+   lexLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.f01$'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
+   lexLabelDF$ontolex.LexicalEntry <- gsub('\\.f01','',lexLabelDF$ontolex.Form)
+   LexicalEntriesDF <- left_join(LexicalEntriesDF,lexLabelDF)
+   LexicalEntriesDF$rdfs.label <- unlist(lapply(seq_along(LexicalEntriesDF$rdfs.label), function(i) paste0(gsub("([A-z]*).*","\\1", sourcePrefix),"’s lexical entry for '", LexicalEntriesDF$ontolex.writtenRep[i],"'"))) %>%
+      gsub("\\[", "", .) %>%
+      gsub("\\]", "", .)
    # add special labels for lexical entries created exclusively as MWE components
    for(i in which(str_detect(LexicalEntriesDF$ontolex.LexicalEntry, "[a-z]$"))){
-      LexicalEntriesDF$rdfs.label[i] <- gsub("[A-z]+ lexical entry for '(.*)'", "Added lexical entry for [\\1], component of a multiword expression", LexicalEntriesDF$rdfs.label[i])
+      LexicalEntriesDF$rdfs.label[i] <- gsub("[A-z]+’s (.*)", "Added \\1, component of a multiword expression", LexicalEntriesDF$rdfs.label[i])
    }
-
-   # updates all prefixes
+   LexicalEntriesDF <- LexicalEntriesDF[,c(
+      which(colnames(LexicalEntriesDF)=="ontolex.LexicalEntry"),
+      which(colnames(LexicalEntriesDF)=="subClass"),
+      which(colnames(LexicalEntriesDF)=="rdfs.label"),
+      which(colnames(LexicalEntriesDF)=="decomp.subterm"),
+      which(colnames(LexicalEntriesDF)=="ontolex.canonicalForm"),
+      which(colnames(LexicalEntriesDF)=="ontolex.lexicalForm"),
+      which(colnames(LexicalEntriesDF)=="lexinfo.note"),
+      which(colnames(LexicalEntriesDF)=="ontolex.sense"),
+      which(colnames(LexicalEntriesDF)=="skos.note"))]
+   # update prefixes
    LexicalEntriesDF$ontolex.LexicalEntry <- gsub(sourcePrefix, "lexicalEntry\\:", LexicalEntriesDF$ontolex.LexicalEntry)
    LexicalEntriesDF$ontolex.canonicalForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.canonicalForm)
    LexicalEntriesDF$ontolex.lexicalForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.lexicalForm)
@@ -153,10 +156,14 @@ targetPub <- "LiLa"
    if(identical(identical(targetPub,"LiLa"), FALSE)){
       LexicalEntriesDF$ontolex.otherForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.otherForm)
    }
+   LexicalEntriesDF[is.na(LexicalEntriesDF)] <- ''
+   rownames(LexicalEntriesDF) <- NULL
+   # LexicalEntries DONE
+   
+   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-   #####################################
    # UPGRADE 'ontolex:Forms' DATA FRAME
-   #####################################
+
    FormsDF$ontolex.Form <- gsub(sourcePrefix, "Form\\:", FormsDF$ontolex.Form)
    if(identical(targetPub,"LiLa")){
       FormsDF <- FormsDF[FormsDF$ontolex.Form %in% LexicalEntriesDF$ontolex.lexicalForm,]
@@ -259,7 +266,7 @@ targetPub <- "LiLa"
    #####################################
    # CREATE A LIST OF DATA FRAMES AND EXPORT AS TSV
    #####################################
-   DictDatasetList <- list(EntriesDF=EntriesDF,LexComponentsDF=LexComponentsDF,LexicalEntriesDF=LexicalEntriesDF,FormsDF=FormsDF,LexicalSensesDF=LexicalSensesAllDF,UsageExamplesDF=UsageExamplesDF)
+   DictDatasetList <- list(EntriesDF=EntriesDF,ComponentsDF=ComponentsDF,LexicalEntriesDF=LexicalEntriesDF,FormsDF=FormsDF,LexicalSensesDF=LexicalSensesAllDF,UsageExamplesDF=UsageExamplesDF)
 
    # save dataset as TSV
    dictDataFolder <- paste0('./data/',gsub('^([A-z]+).*','\\L\\1',sourcePrefix, perl = T),targetPub,'-dataset/')
