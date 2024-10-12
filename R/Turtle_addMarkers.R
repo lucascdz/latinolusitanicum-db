@@ -5,15 +5,15 @@
 
 AddMarkers <- function(SourceDFList){
 
-   SourceDFList$EntriesDF[SourceDFList$EntriesDF == ""] <- NA
-   SourceDFList$EntriesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$EntriesDF$rdfs.label)
-   SourceDFList$EntriesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$EntriesDF$skos.note)
-   SourceDFList$EntriesDF[is.na(SourceDFList$EntriesDF)] <- ""
+   SourceDFList$LexicogEntriesDF[SourceDFList$LexicogEntriesDF == ""] <- NA
+   SourceDFList$LexicogEntriesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicogEntriesDF$rdfs.label)
+   SourceDFList$LexicogEntriesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicogEntriesDF$skos.note)
+   SourceDFList$LexicogEntriesDF[is.na(SourceDFList$LexicogEntriesDF)] <- ""
 
-   SourceDFList$LexComponentsDF[SourceDFList$LexComponentsDF == ""] <- NA
-   SourceDFList$LexComponentsDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexComponentsDF$rdfs.label)
-   SourceDFList$LexComponentsDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexComponentsDF$skos.note)
-   SourceDFList$LexComponentsDF[is.na(SourceDFList$LexComponentsDF)] <- ""
+   SourceDFList$LexicogComponentsDF[SourceDFList$LexicogComponentsDF == ""] <- NA
+   SourceDFList$LexicogComponentsDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicogComponentsDF$rdfs.label)
+   SourceDFList$LexicogComponentsDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicogComponentsDF$skos.note)
+   SourceDFList$LexicogComponentsDF[is.na(SourceDFList$LexicogComponentsDF)] <- ""
 
    SourceDFList$LexicalEntriesDF[SourceDFList$LexicalEntriesDF == ""] <- NA
    SourceDFList$LexicalEntriesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicalEntriesDF$rdfs.label)
@@ -21,12 +21,12 @@ AddMarkers <- function(SourceDFList){
    SourceDFList$LexicalEntriesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalEntriesDF$skos.note)
    SourceDFList$LexicalEntriesDF[is.na(SourceDFList$LexicalEntriesDF)] <- ""
 
-   SourceDFList$FormsDF[SourceDFList$FormsDF == ""] <- NA
-   SourceDFList$FormsDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$FormsDF$rdfs.label)
-   SourceDFList$FormsDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$FormsDF$skos.note)
-   SourceDFList$FormsDF$ontolex.writtenRep <- gsub("(.*)", "##\\1##", SourceDFList$FormsDF$ontolex.writtenRep)
-   SourceDFList$FormsDF$lexinfo.note <- gsub("(.*)", "##\\1##", SourceDFList$FormsDF$lexinfo.note)
-   SourceDFList$FormsDF[is.na(SourceDFList$FormsDF)] <- ""
+   SourceDFList$LexicalFormsDF[SourceDFList$LexicalFormsDF == ""] <- NA
+   SourceDFList$LexicalFormsDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$rdfs.label)
+   SourceDFList$LexicalFormsDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$skos.note)
+   SourceDFList$LexicalFormsDF$ontolex.writtenRep <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$ontolex.writtenRep)
+   SourceDFList$LexicalFormsDF$lexinfo.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$lexinfo.note)
+   SourceDFList$LexicalFormsDF[is.na(SourceDFList$LexicalFormsDF)] <- ""
 
    SourceDFList$LexicalSensesDF[SourceDFList$LexicalSensesDF == ""] <- NA
    SourceDFList$LexicalSensesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalSensesDF$skos.note)
@@ -48,7 +48,6 @@ AddMarkers <- function(SourceDFList){
    SourceDFList$UsageExamplesDF$rdfs.value.la <- gsub("(.*)", "##\\1## @la", SourceDFList$UsageExamplesDF$rdfs.value.la)
    SourceDFList$UsageExamplesDF$lexinfo.note <- gsub("(.*)", "##\\1##", SourceDFList$UsageExamplesDF$lexinfo.note)
    SourceDFList$UsageExamplesDF$rdfs.value.pt <- gsub("(.*)", "##\\1## @pt", SourceDFList$UsageExamplesDF$rdfs.value.pt)
-   SourceDFList$UsageExamplesDF$lexinfo.note.1 <- gsub("(.*)", "##\\1##", SourceDFList$UsageExamplesDF$lexinfo.note.1)
    SourceDFList$UsageExamplesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$UsageExamplesDF$rdfs.label)
    SourceDFList$UsageExamplesDF[is.na(SourceDFList$UsageExamplesDF)] <- ""
 
