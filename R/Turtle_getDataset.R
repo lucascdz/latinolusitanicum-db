@@ -7,7 +7,7 @@ library(jsonlite)
 #targetPub <- "LiLa"
 
 GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
-   print(date())
+   iniTime <- date()
 
    # GET SOURCE DATA TABLES
    LexicalEntriesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^LexicalEntries"))])
@@ -37,7 +37,7 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    # PREPARE 'lexicog:DataFrames'
    LexicogDF <- LexicalEntriesDF[,colnames(LexicalEntriesDF) %in% c("ontolex.LexicalEntry","PRE.note","POS.note")]
    colnames(LexicogDF) <- c("lexicog.describes","lexinfo.note","skos.note")
-
+   LexicogDF <- LexicogDF[!str_detect(LexicogDF$lexicog.describes,'[a-z]$'),]
       
    # CREATE 'lexicog:Entries' DATA FRAME
    LexicogEntriesDF <- LexicogDF[str_detect(LexicogDF$lexicog.describes,'e01$'),]
@@ -125,9 +125,12 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    LexicalEntriesDF <- left_join(LexicalEntriesDF,ontolexSensesDF)
    # add 'decomp.subterm' property to mwes
    DecompDF <- DecompDF[,c(which(str_detect(colnames(DecompDF),'ontolex|decomp')))]
-
-      # >>>>>>>>>>>>>>>>> TEST decomp.blanknode <<<<<<<<<<<<<<<<<<
-   
+                     # >>>>>>>>>>>>>>>>> TEST decomp.blanknode <<<<<<<<<<<<<<<<<<
+   DecompList <- split(DecompDF,DecompDF$ontolex.LexicalEntry)
+   DecompDF <- data.frame(
+      ontolex.LexicalEntry=names(DecompList),
+      decomp.subterm=unlist(lapply(seq_along(DecompList), function(i) str_flatten_comma(DecompList[[i]]$decomp.subterm))),
+      stringsAsFactors = F)
    LexicalEntriesDF <- left_join(LexicalEntriesDF,DecompDF)
    # add 'rdfs.labels' to all instances
    lexLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.f01$'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
@@ -152,12 +155,12 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       which(colnames(LexicalEntriesDF)=="skos.note"))]
    # update prefixes
    LexicalEntriesDF$ontolex.LexicalEntry <- gsub(sourcePrefix, "lexicalEntry\\:", LexicalEntriesDF$ontolex.LexicalEntry)
-   LexicalEntriesDF$ontolex.canonicalForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.canonicalForm)
-   LexicalEntriesDF$ontolex.lexicalForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.lexicalForm)
+   LexicalEntriesDF$ontolex.canonicalForm <- gsub(sourcePrefix, "lexicalForm\\:", LexicalEntriesDF$ontolex.canonicalForm)
+   LexicalEntriesDF$ontolex.lexicalForm <- gsub(sourcePrefix, "lexicalForm\\:", LexicalEntriesDF$ontolex.lexicalForm)
    LexicalEntriesDF$decomp.subterm <- gsub(sourcePrefix, "lexicalEntry\\:", LexicalEntriesDF$decomp.subterm)
    LexicalEntriesDF$ontolex.sense <- gsub(sourcePrefix, "lexicalSense\\:", LexicalEntriesDF$ontolex.sense)
    if(identical(identical(targetPub,"LiLa"), FALSE)){
-      LexicalEntriesDF$ontolex.otherForm <- gsub(sourcePrefix, "Form\\:", LexicalEntriesDF$ontolex.otherForm)
+      LexicalEntriesDF$ontolex.otherForm <- gsub(sourcePrefix, "lexicalForm\\:", LexicalEntriesDF$ontolex.otherForm)
    }
    LexicalEntriesDF[is.na(LexicalEntriesDF)] <- ''
    rownames(LexicalEntriesDF) <- NULL
@@ -165,7 +168,7 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    
 
    # UPGRADE 'ontolex:Forms' DATA FRAME
-   FormsDF$ontolex.Form <- gsub(sourcePrefix, "Form\\:", FormsDF$ontolex.Form)
+   FormsDF$ontolex.Form <- gsub(sourcePrefix, "lexicalForm\\:", FormsDF$ontolex.Form)
    if(identical(targetPub,"LiLa")){
       FormsDF <- FormsDF[FormsDF$ontolex.Form %in% LexicalEntriesDF$ontolex.lexicalForm,]
    }
@@ -283,8 +286,11 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    system(paste0('mkdir ',dictDataFolder))
    lapply(seq_along(DictDatasetList), function(i) write_tsv(DictDatasetList[[i]],paste0(dictDataFolder,gsub('DF','',names(DictDatasetList)[i]),'.tsv')))
    
-   
-   print(date())
+   endTime <- date()
+   print(iniTime)
+   print(endTime)
+
    return(DictDatasetList)
+
 }
 

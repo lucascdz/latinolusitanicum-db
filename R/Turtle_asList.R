@@ -26,10 +26,10 @@ ConvertToList <- function(SourceDFList, sourceDir, resource.LexicogList, resourc
    
    # UNIFY IN ONE BIG LIST AND SAVE IT INTO RDS AND JSON FILES
    CompleteList <- list(
-      LEXICOGRAPHIC_RESOURCE=list(resource.Lexicog=resource.LexicogList), 
+      LEXICOGRAPHIC_RESOURCE=list(lilaResource.Lexicog=resource.LexicogList), 
       LEXICOGRAPHIC_ENTRIES=LexicogEntriesList, 
       LEXICOGRAPHIC_COMPONENTS=LexicogComponentsList, 
-      LEXICON=list(resource.Lexicon=resource.LexiconList), 
+      LEXICON=list(lilaResource.Lexicon=resource.LexiconList), 
       LEXICAL_ENTRIES=LexicalEntriesList, 
       LEXICAL_FORMS=LexicalFormsList, 
       LEXICAL_SENSES=LexicalSensesList, 
