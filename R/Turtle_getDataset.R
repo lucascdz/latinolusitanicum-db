@@ -6,8 +6,7 @@ library(jsonlite)
 #sourcePrefix <- "Velez1744\\."
 #targetPub <- "LiLa"
 
-GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
-   iniTime <- date()
+Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
 
    # GET SOURCE DATA TABLES
    LexicalEntriesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^LexicalEntries"))])
@@ -124,13 +123,19 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       stringsAsFactors = F)
    LexicalEntriesDF <- left_join(LexicalEntriesDF,ontolexSensesDF)
    # add 'decomp.subterm' property to mwes
+   if (isTRUE('blankNode' %in% colnames(DecompDF))){
+      DecompDF$blankNode[DecompDF$blankNode==''] <- NA
+      DecompDF$decomp.subterm <- DecompDF$blankNode
+   }
    DecompDF <- DecompDF[,c(which(str_detect(colnames(DecompDF),'ontolex|decomp')))]
-                     # >>>>>>>>>>>>>>>>> TEST decomp.blanknode <<<<<<<<<<<<<<<<<<
    DecompList <- split(DecompDF,DecompDF$ontolex.LexicalEntry)
    DecompDF <- data.frame(
       ontolex.LexicalEntry=names(DecompList),
-      decomp.subterm=unlist(lapply(seq_along(DecompList), function(i) str_flatten_comma(DecompList[[i]]$decomp.subterm))),
+      decomp.subterm=unlist(lapply(seq_along(DecompList), function(i) str_flatten_comma(DecompList[[i]]$decomp.subterm,na.rm = T))),
       stringsAsFactors = F)
+   if (isTRUE('TRUE' %in% str_detect(DecompDF$decomp.subterm,'lila'))){
+      DecompDF$decomp.subterm <- gsub('(.*)','[ ontolex:canonicalForm \\1 ]',DecompDF$decomp.subterm)
+   }
    LexicalEntriesDF <- left_join(LexicalEntriesDF,DecompDF)
    # add 'rdfs.labels' to all instances
    lexLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.f01$'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
@@ -286,10 +291,6 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    system(paste0('mkdir ',dictDataFolder))
    lapply(seq_along(DictDatasetList), function(i) write_tsv(DictDatasetList[[i]],paste0(dictDataFolder,gsub('DF','',names(DictDatasetList)[i]),'.tsv')))
    
-   endTime <- date()
-   print(iniTime)
-   print(endTime)
-
    return(DictDatasetList)
 
 }

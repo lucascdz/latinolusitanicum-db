@@ -70,6 +70,8 @@ ConvertFromJson <- function(jsonFile, sourcePrefix, targetFolder){
 @prefix lexicalSense: <http://lila-erc.eu/data/lexicalResources/LatinPortuguese/",gsub('\\d*\\\\\\.','',sourcePrefix),"/id/LexicalSense/> .
 @prefix usageExample: <http://lila-erc.eu/data/lexicalResources/LatinPortuguese/",gsub('\\d*\\\\\\.','',sourcePrefix),"/id/UsageExample/> .
 \n")
+   #
+   
    Turtle <- gsub("\\{", Prefixes, Json2Turtle)
    
    write(Turtle, paste0(targetFolder,gsub("([A-z]*).*", "\\1", sourcePrefix),".ttl"))

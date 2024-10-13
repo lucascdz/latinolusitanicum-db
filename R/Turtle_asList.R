@@ -4,8 +4,7 @@
 
 # library
 ConvertToList <- function(SourceDFList, sourceDir, resource.LexicogList, resource.LexiconList){
-   print(date())
-   
+
    #source("./R/DataFrame2List.R")
    DataFrame2List <- function(SourceDF){
       List <- split(SourceDF[,c(2:length(SourceDF))], seq(nrow(SourceDF[,c(2:length(SourceDF))])))
@@ -36,6 +35,5 @@ ConvertToList <- function(SourceDFList, sourceDir, resource.LexicogList, resourc
       LEXICOGRAPHIC_EXAMPLES=UsageExamplesList)
    #saveRDS(CompleteList, paste0(dictDataDir,gsub("([A-z]*).*", "\\1", dictPrefix),"DataList.rds"))
    
-   print(date())
    return(CompleteList)
 }
