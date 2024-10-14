@@ -5,7 +5,7 @@ iniTime <- date()
 
 # get a list of source Dataframes
 source("./R/Turtle_getDataset.R")
-SourceDFList <- Turtle_getData(sourceDir,sourcePrefix,targetPub,targetFolder)
+SourceDFList <- GetDataset(sourceDir,sourcePrefix,targetPub,targetFolder)
 
 # add markers to string.values (##)
 source("./R/Turtle_addMarkers.R")

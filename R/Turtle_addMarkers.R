@@ -21,7 +21,7 @@ AddMarkers <- function(SourceDFList){
    SourceDFList$LexicalEntriesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalEntriesDF$skos.note)
    SourceDFList$LexicalEntriesDF[is.na(SourceDFList$LexicalEntriesDF)] <- ""
 
-   SourceDFList$LexicalFormsDF[SourceDFList$LexicalFormsDF == ""] <- NA
+   SourceDFList$LexicalFormsDF[SourceDFList$FormsDF == ""] <- NA
    SourceDFList$LexicalFormsDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$rdfs.label)
    SourceDFList$LexicalFormsDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$skos.note)
    SourceDFList$LexicalFormsDF$ontolex.writtenRep <- gsub("(.*)", "##\\1##", SourceDFList$LexicalFormsDF$ontolex.writtenRep)

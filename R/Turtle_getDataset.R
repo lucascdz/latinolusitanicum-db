@@ -6,8 +6,8 @@ library(jsonlite)
 #sourcePrefix <- "Velez1744\\."
 #targetPub <- "LiLa"
 
-Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
-
+GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
+   
    # GET SOURCE DATA TABLES
    LexicalEntriesPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^LexicalEntries"))])
    LexicalEntriesDF <- read.csv(LexicalEntriesPath, sep = "\t")
@@ -19,7 +19,7 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    UsageExamplesDF <- read.csv(UsageExamplesPath, sep = "\t")
    DecompPath <- paste0(sourceDir,dir(sourceDir)[which(str_detect(dir(sourceDir),"^Decomp"))])
    DecompDF <- read.csv(DecompPath, sep = "\t")
-
+   
    
    # FILTER OUT DUPLICATES 'LexicalEntries' (SAME senseGroup AND lila_id [once not empty])
    if(identical(targetPub,"LiLa")){
@@ -32,12 +32,11 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       LexicalEntriesDF <- LexicalEntriesDF[!is.na(LexicalEntriesDF$ontolex.LexicalEntry),]
    }
    
-
    # PREPARE 'lexicog:DataFrames'
    LexicogDF <- LexicalEntriesDF[,colnames(LexicalEntriesDF) %in% c("ontolex.LexicalEntry","PRE.note","POS.note")]
    colnames(LexicogDF) <- c("lexicog.describes","lexinfo.note","skos.note")
    LexicogDF <- LexicogDF[!str_detect(LexicogDF$lexicog.describes,'[a-z]$'),]
-      
+   
    # CREATE 'lexicog:Entries' DATA FRAME
    LexicogEntriesDF <- LexicogDF[str_detect(LexicogDF$lexicog.describes,'e01$'),]
    LexicogEntriesDF$lexicog.Entry <- gsub('.e01$','',LexicogEntriesDF$lexicog.describes)
@@ -72,7 +71,7 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    rownames(LexicogEntriesDF) <- NULL
    ## LexicogEntriesDF DONE
    
-
+   
    # CREATE 'lexicog:Components' DATA FRAME
    LexicogComponentsDF <- LexicogDF[!str_detect(LexicogDF$lexicog.describes, 'e01') & !str_detect(LexicogDF$lexicog.describes, 'e\\d\\d[a-z]'),]
    LexicogComponentsDF$lexicog.Entry <- gsub('\\.e\\d+.?$','',LexicogComponentsDF$lexicog.describes)
@@ -95,9 +94,9 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    rownames(LexicogComponentsDF) <- NULL
    ## Components DONE
    
-
+   
    # UPDATE 'ontolex:LexicalEntries' DATA FRAME
-
+   
    # add links to lexical forms
    LexicalEntriesDF$ontolex.lexicalForm <- ''
    if(identical(targetPub,"LiLa")){
@@ -123,19 +122,14 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       stringsAsFactors = F)
    LexicalEntriesDF <- left_join(LexicalEntriesDF,ontolexSensesDF)
    # add 'decomp.subterm' property to mwes
-   if (isTRUE('blankNode' %in% colnames(DecompDF))){
-      DecompDF$blankNode[DecompDF$blankNode==''] <- NA
-      DecompDF$decomp.subterm <- DecompDF$blankNode
-   }
+   DecompDF[DecompDF==''] <- NA
+   DecompDF$decomp.subterm[is.na(DecompDF$decomp.subterm)] <- gsub('(.*)','[ ontolex:canonicalForm \\1 ]',DecompDF$lila_id.subterm[is.na(DecompDF$decomp.subterm)])
    DecompDF <- DecompDF[,c(which(str_detect(colnames(DecompDF),'ontolex|decomp')))]
    DecompList <- split(DecompDF,DecompDF$ontolex.LexicalEntry)
    DecompDF <- data.frame(
       ontolex.LexicalEntry=names(DecompList),
       decomp.subterm=unlist(lapply(seq_along(DecompList), function(i) str_flatten_comma(DecompList[[i]]$decomp.subterm,na.rm = T))),
       stringsAsFactors = F)
-   if (isTRUE('TRUE' %in% str_detect(DecompDF$decomp.subterm,'lila'))){
-      DecompDF$decomp.subterm <- gsub('(.*)','[ ontolex:canonicalForm \\1 ]',DecompDF$decomp.subterm)
-   }
    LexicalEntriesDF <- left_join(LexicalEntriesDF,DecompDF)
    # add 'rdfs.labels' to all instances
    lexLabelDF <- FormsDF[str_detect(FormsDF$ontolex.Form,'\\.f01$'),colnames(FormsDF) %in% c('ontolex.Form',"ontolex.writtenRep")]
@@ -148,16 +142,10 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    for(i in which(str_detect(LexicalEntriesDF$ontolex.LexicalEntry, "[a-z]$"))){
       LexicalEntriesDF$rdfs.label[i] <- gsub("[A-z]+’s (.*)", "Added \\1, component of a multiword expression", LexicalEntriesDF$rdfs.label[i])
    }
-   LexicalEntriesDF <- LexicalEntriesDF[,c(
-      which(colnames(LexicalEntriesDF)=="ontolex.LexicalEntry"),
-      which(colnames(LexicalEntriesDF)=="subClass"),
-      which(colnames(LexicalEntriesDF)=="rdfs.label"),
-      which(colnames(LexicalEntriesDF)=="decomp.subterm"),
-      which(colnames(LexicalEntriesDF)=="ontolex.canonicalForm"),
-      which(colnames(LexicalEntriesDF)=="ontolex.lexicalForm"),
-      which(colnames(LexicalEntriesDF)=="lexinfo.note"),
-      which(colnames(LexicalEntriesDF)=="ontolex.sense"),
-      which(colnames(LexicalEntriesDF)=="skos.note"))]
+   # clear columns
+   LexicalEntriesDF <- LexicalEntriesDF[,which(str_detect(colnames(LexicalEntriesDF),'subClass|decomp|lexicog|lexinfo|ontolex|rdfs|skos'))]
+   LexicalEntriesDF <- LexicalEntriesDF[,-which(colnames(LexicalEntriesDF) %in% c('ontolex.Form','ontolex.writtenRep'))]
+   LexicalEntriesDF <- LexicalEntriesDF[,c(1,2,order(colnames(LexicalEntriesDF))[-which(order(colnames(LexicalEntriesDF)) %in% 1:2)])]
    # update prefixes
    LexicalEntriesDF$ontolex.LexicalEntry <- gsub(sourcePrefix, "lexicalEntry\\:", LexicalEntriesDF$ontolex.LexicalEntry)
    LexicalEntriesDF$ontolex.canonicalForm <- gsub(sourcePrefix, "lexicalForm\\:", LexicalEntriesDF$ontolex.canonicalForm)
@@ -171,7 +159,7 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    rownames(LexicalEntriesDF) <- NULL
    # LexicalEntries DONE
    
-
+   
    # UPGRADE 'ontolex:Forms' DATA FRAME
    FormsDF$ontolex.Form <- gsub(sourcePrefix, "lexicalForm\\:", FormsDF$ontolex.Form)
    if(identical(targetPub,"LiLa")){
@@ -187,8 +175,8 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    FormsDF$rdfs.label <- gsub("(.*)", "\\L\\1", FormsDF$rdfs.label, perl = T) %>%
       gsub("j", "i", .) %>%
       gsub("v", "u", .)
-
-
+   FormsDF <- FormsDF[,which(str_detect(colnames(FormsDF),'lexinfo|ontolex|rdfs|skos'))]
+   
    # UPGRADE 'ontolex:LexicalSenses' DATA FRAME
    LexicalSensesAllDF <- data.frame(
       ontolex.LexicalSense=unique(c(LexicalSensesDF$ontolex.LexicalSense, gsub("\\.u\\d\\d.?$", "", UsageExamplesDF$lexicog.UsageExample))),
@@ -237,24 +225,19 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    # update prefixes
    LexicalSensesAllDF$lexicog.usageExample <- gsub(sourcePrefix, "usageExample\\:", LexicalSensesAllDF$lexicog.usageExample)
    LexicalSensesAllDF$ontolex.LexicalSense <- gsub(sourcePrefix, "lexicalSense\\:", LexicalSensesAllDF$ontolex.LexicalSense)
-   LexicalSensesAllDF <- LexicalSensesAllDF[,c(
-         which(colnames(LexicalSensesAllDF)=="ontolex.LexicalSense"),
-         which(colnames(LexicalSensesAllDF)=="rdfs.label.la"),
-         which(colnames(LexicalSensesAllDF)=="rdfs.label.pt"),
-         which(colnames(LexicalSensesAllDF)=="rdfs.label.en"),
-         which(colnames(LexicalSensesAllDF)=="rdfs.comment"),
-         which(colnames(LexicalSensesAllDF)=="lexinfo.note"),
-         which(colnames(LexicalSensesAllDF)=="skos.definition.la"),
-         which(colnames(LexicalSensesAllDF)=="skos.definition.pt"),
-         which(colnames(LexicalSensesAllDF)=="skos.note"),
-         which(colnames(LexicalSensesAllDF)=="lexicog.usageExample"))]
+   LexicalSensesAllDF <- LexicalSensesAllDF[,which(str_detect(colnames(LexicalSensesAllDF),'lexicog|lexinfo|ontolex|rdfs|skos'))]
+   LexicalSensesAllDF <- LexicalSensesAllDF[,c(1,order(colnames(LexicalSensesAllDF))[-which(order(colnames(LexicalSensesAllDF))==1)])]
    LexicalSensesAllDF[is.na(LexicalSensesAllDF)] <- ''
    
    
    # UPDATE 'lexicog:UsageExamples' DATA FRAME
-   UsageExamplesDF$lexicog.UsageExample <- gsub(sourcePrefix, "usageExample\\:", UsageExamplesDF$lexicog.UsageExample)
-   UsageExamplesDF$skos.note <- unlist(lapply(seq_along(UsageExamplesDF$lexicog.UsageExample), function(i) str_flatten(UsageExamplesDF[i,str_detect(colnames(UsageExamplesDF),'skos.note')])))
-   UsageExamplesDF$lexinfo.note <- unlist(lapply(seq_along(UsageExamplesDF$lexicog.UsageExample), function(i) str_flatten(UsageExamplesDF[i,str_detect(colnames(UsageExamplesDF),'lexinfo.note')])))
+   # join skos.notes
+   if(TRUE %in% str_detect(colnames(UsageExamplesDF),'skos.note_')){
+      UsageExamplesDF[UsageExamplesDF==''] <- NA
+      UsageExamplesDF$skos.note <- unlist(lapply(seq_along(UsageExamplesDF$lexicog.UsageExample), function(i) str_flatten(UsageExamplesDF[i,str_detect(colnames(UsageExamplesDF),'skos.note')],na.rm = T,collapse = ' ')))
+      UsageExamplesDF <- UsageExamplesDF[,-which(str_detect(colnames(UsageExamplesDF),'skos.note_'))]
+      UsageExamplesDF[is.na(UsageExamplesDF)] <- ''
+   }
    # remove ending punctuation and square brackets
    UsageExamplesDF$skos.note <- gsub("[\\,|\\:|\\;]$", "", UsageExamplesDF$skos.note) %>%
       gsub('\\[','',.) %>%
@@ -281,8 +264,13 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       gsub("(.*)", " \\1 ", .) %>%
       gsub("\\s+", " ", .) %>%
       gsub("^\\s$", "", .)
-
-
+   # update prefix
+   UsageExamplesDF$lexicog.UsageExample <- gsub(sourcePrefix, "usageExample\\:", UsageExamplesDF$lexicog.UsageExample)
+   # clear and order columns
+   UsageExamplesDF <- UsageExamplesDF[,which(str_detect(colnames(UsageExamplesDF),'lexicog|lexinfo|rdfs|skos'))]
+   UsageExamplesDF <- UsageExamplesDF[,c(1,order(colnames(UsageExamplesDF))[-which(order(colnames(UsageExamplesDF))==1)])]
+   
+   
    # CREATE A LIST OF DATA FRAMES
    DictDatasetList <- list(LexicogEntriesDF=LexicogEntriesDF,LexicogComponentsDF=LexicogComponentsDF,LexicalEntriesDF=LexicalEntriesDF,LexicalFormsDF=FormsDF,LexicalSensesDF=LexicalSensesAllDF,UsageExamplesDF=UsageExamplesDF)
    
@@ -292,6 +280,6 @@ Turtle_getData <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
    lapply(seq_along(DictDatasetList), function(i) write_tsv(DictDatasetList[[i]],paste0(dictDataFolder,gsub('DF','',names(DictDatasetList)[i]),'.tsv')))
    
    return(DictDatasetList)
-
+   
 }
 
