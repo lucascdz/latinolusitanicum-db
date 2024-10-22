@@ -6,6 +6,7 @@
 AddMarkers <- function(SourceDFList){
 
    SourceDFList$LexicogEntriesDF[SourceDFList$LexicogEntriesDF == ""] <- NA
+   SourceDFList$LexicogEntriesDF$lexinfo.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicogEntriesDF$lexinfo.note)
    SourceDFList$LexicogEntriesDF$rdfs.label <- gsub("(.*)", "##\\1##", SourceDFList$LexicogEntriesDF$rdfs.label)
    SourceDFList$LexicogEntriesDF$skos.note <- gsub("(.*)", "##\\1##", SourceDFList$LexicogEntriesDF$skos.note)
    SourceDFList$LexicogEntriesDF[is.na(SourceDFList$LexicogEntriesDF)] <- ""
