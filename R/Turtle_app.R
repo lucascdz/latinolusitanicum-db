@@ -1,9 +1,11 @@
 # APP for building Turtle RDF files from Dictionary source datasets
 
 Dict <- 'Velez'
+#Dict <- 'Fonseca'
+#Dict <- 'Cardoso'
 
 if(Dict=='Velez'){
-   sourceDir <- "./sources/Velez/Velez.1744.indextotiusartis.1.4.2/"
+   sourceDir <- "../latinolusitanicum-sources/Velez/Velez.1744.indextotiusartis.1.4.2/"
    sourcePrefix <- "Velez1744\\."
 }
 if(Dict=='Fonseca'){
@@ -17,7 +19,7 @@ if(Dict=='Cardoso'){
 targetPub <- "LiLa"
 targetFolder <- '../Latin-Portuguese-dictionaries/'
 system(paste0('mkdir ',targetFolder))
-source('./R/Turtle_pipe.R')
+source('./R/Turtle_pipeline.R')
 
 ## Velez total time = 30 sec.
 ## Fonseca total time = 07 min.

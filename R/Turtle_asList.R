@@ -25,14 +25,14 @@ ConvertToList <- function(SourceDFList, sourceDir, resource.LexicogList, resourc
    
    # UNIFY IN ONE BIG LIST AND SAVE IT INTO RDS AND JSON FILES
    CompleteList <- list(
-      LEXICOGRAPHIC_RESOURCE=list(lilaResource.Lexicog=resource.LexicogList), 
-      LEXICOGRAPHIC_ENTRIES=LexicogEntriesList, 
-      LEXICOGRAPHIC_COMPONENTS=LexicogComponentsList, 
       LEXICON=list(lilaResource.Lexicon=resource.LexiconList), 
       LEXICAL_ENTRIES=LexicalEntriesList, 
       LEXICAL_FORMS=LexicalFormsList, 
       LEXICAL_SENSES=LexicalSensesList, 
-      LEXICOGRAPHIC_EXAMPLES=UsageExamplesList)
+      LEXICOGRAPHIC_EXAMPLES=UsageExamplesList,
+      LEXICOGRAPHIC_RESOURCE=list(lilaResource.Lexicog=resource.LexicogList), 
+      LEXICOGRAPHIC_ENTRIES=LexicogEntriesList, 
+      LEXICOGRAPHIC_COMPONENTS=LexicogComponentsList)
    #saveRDS(CompleteList, paste0(dictDataDir,gsub("([A-z]*).*", "\\1", dictPrefix),"DataList.rds"))
    
    return(CompleteList)

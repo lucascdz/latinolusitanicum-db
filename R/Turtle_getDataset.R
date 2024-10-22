@@ -176,6 +176,7 @@ GetDataset <- function(sourceDir,sourcePrefix,targetPub,targetFolder){
       gsub("j", "i", .) %>%
       gsub("v", "u", .)
    FormsDF <- FormsDF[,which(str_detect(colnames(FormsDF),'lexinfo|ontolex|rdfs|skos'))]
+
    
    # UPGRADE 'ontolex:LexicalSenses' DATA FRAME
    LexicalSensesAllDF <- data.frame(
