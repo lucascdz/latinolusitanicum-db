@@ -6,7 +6,6 @@ decomp.subterm	lexinfo.note	ontolex.canonicalForm	ontolex.lexicalForm	ontolex.se
 |--|--|
 | ontolex.LexicalEntry | lexical entry unique identifier (id) |
 | subClass | ontolex:Affix OR ontolex:Word OR ontolex:MultiwordExpression OR lexinfo:contraction |
-
 | senseGroup | keys to LexicalSenses table |
 | ontolex.canonicalForm | lilaLemma:Id OR lilaIpoLemma:Id |
 | rdfs.label | normalized lemma form |
